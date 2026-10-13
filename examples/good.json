@@ -1,0 +1,127 @@
+{
+ "security_lists": [
+  {
+   "name": "web-sl",
+   "ingress": [
+    {
+     "protocol": "tcp",
+     "source": "0.0.0.0/0",
+     "ports": 443,
+     "description": "https"
+    },
+    {
+     "protocol": "tcp",
+     "source": "10.0.0.0/24",
+     "ports": 22,
+     "description": "ssh from bastion subnet"
+    },
+    {
+     "protocol": "icmp",
+     "source": "0.0.0.0/0",
+     "icmp_type": 3
+    }
+   ],
+   "egress": [
+    {
+     "protocol": "tcp",
+     "destination": "10.0.2.0/24",
+     "ports": [
+      5432,
+      5432
+     ]
+    },
+    {
+     "protocol": "tcp",
+     "destination": "0.0.0.0/0",
+     "ports": 443
+    }
+   ]
+  },
+  {
+   "name": "db-sl",
+   "ingress": [
+    {
+     "protocol": "tcp",
+     "source": "10.0.1.0/24",
+     "ports": 5432
+    }
+   ],
+   "egress": [
+    {
+     "protocol": "tcp",
+     "destination": "10.0.1.0/24"
+    }
+   ]
+  }
+ ],
+ "nsgs": [
+  {
+   "name": "app-nsg",
+   "ingress": [
+    {
+     "protocol": "tcp",
+     "source": "nsg:lb-nsg",
+     "ports": 8080
+    }
+   ],
+   "egress": [
+    {
+     "protocol": "tcp",
+     "destination": "10.0.2.0/24",
+     "ports": 5432
+    }
+   ]
+  },
+  {
+   "name": "lb-nsg",
+   "ingress": [
+    {
+     "protocol": "tcp",
+     "source": "0.0.0.0/0",
+     "ports": 80
+    },
+    {
+     "protocol": "tcp",
+     "source": "0.0.0.0/0",
+     "ports": 443
+    }
+   ],
+   "egress": [
+    {
+     "protocol": "tcp",
+     "destination": "nsg:app-nsg",
+     "ports": 8080
+    }
+   ]
+  }
+ ],
+ "subnets": [
+  {
+   "name": "web-subnet",
+   "public": true,
+   "security_lists": [
+    "web-sl"
+   ]
+  },
+  {
+   "name": "db-subnet",
+   "security_lists": [
+    "db-sl"
+   ]
+  }
+ ],
+ "vnics": [
+  {
+   "name": "app-vm-1",
+   "nsgs": [
+    "app-nsg"
+   ]
+  },
+  {
+   "name": "lb-1",
+   "nsgs": [
+    "lb-nsg"
+   ]
+  }
+ ]
+}

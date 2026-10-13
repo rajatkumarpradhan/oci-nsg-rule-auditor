@@ -1,0 +1,151 @@
+{
+ "security_lists": [
+  {
+   "name": "open-sl",
+   "ingress": [
+    {
+     "protocol": "tcp",
+     "source": "0.0.0.0/0",
+     "ports": 22
+    },
+    {
+     "protocol": "tcp",
+     "source": "::/0",
+     "ports": [
+      3380,
+      3400
+     ]
+    },
+    {
+     "protocol": "tcp",
+     "source": "0.0.0.0/0",
+     "ports": 3306
+    },
+    {
+     "protocol": "tcp",
+     "source": "0.0.0.0/0",
+     "ports": [
+      5000,
+      5200
+     ]
+    },
+    {
+     "protocol": "icmp",
+     "source": "0.0.0.0/0"
+    },
+    {
+     "protocol": "tcp",
+     "source": "8.0.0.0/8",
+     "ports": [
+      1,
+      65535
+     ]
+    },
+    {
+     "protocol": "tcp",
+     "source": "10.0.0.0/24",
+     "ports": 443
+    },
+    {
+     "protocol": "tcp",
+     "source": "10.0.0.0/16",
+     "ports": [
+      400,
+      500
+     ]
+    },
+    {
+     "protocol": "tcp",
+     "source": "10.0.0.0/16",
+     "ports": [
+      400,
+      500
+     ]
+    },
+    {
+     "protocol": "tcp",
+     "source": "10.0.5.0/24",
+     "ports": 450
+    },
+    {
+     "protocol": "tcp",
+     "source": "172.16.0.0/12",
+     "ports": 8080,
+     "stateless": true
+    },
+    {
+     "protocol": "tcp",
+     "source": "0.0.0.0/0",
+     "ports": [
+      1000,
+      1100
+     ]
+    }
+   ],
+   "egress": [
+    {
+     "protocol": "tcp",
+     "destination": "10.0.0.0/8",
+     "ports": 443
+    }
+   ]
+  },
+  {
+   "name": "orphan-sl",
+   "ingress": [],
+   "egress": []
+  },
+  {
+   "name": "everything-sl",
+   "ingress": [
+    {
+     "protocol": "tcp",
+     "source": "203.0.113.0/24",
+     "ports": 8443
+    },
+    {
+     "protocol": "all",
+     "source": "0.0.0.0/0"
+    }
+   ],
+   "egress": [
+    {
+     "protocol": "all",
+     "destination": "0.0.0.0/0"
+    }
+   ]
+  }
+ ],
+ "nsgs": [
+  {
+   "name": "stray-nsg",
+   "ingress": [
+    {
+     "protocol": "tcp",
+     "source": "nsg:ghost-nsg",
+     "ports": 80
+    }
+   ],
+   "egress": []
+  }
+ ],
+ "subnets": [
+  {
+   "name": "pub",
+   "public": true,
+   "security_lists": [
+    "open-sl",
+    "missing-sl",
+    "everything-sl"
+   ]
+  }
+ ],
+ "vnics": [
+  {
+   "name": "vm-1",
+   "nsgs": [
+    "ghost-vnic-nsg"
+   ]
+  }
+ ]
+}

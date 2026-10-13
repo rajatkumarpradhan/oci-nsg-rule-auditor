@@ -1,0 +1,16 @@
+[build-system]
+requires = ["setuptools>=61"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "oci-nsg-rule-auditor"
+version = "0.1.0"
+description = "Offline audit of OCI-style security lists and network security groups on synthetic exports"
+requires-python = ">=3.10"
+readme = "README.md"
+
+[project.scripts]
+nsg-audit = "nsg_audit.cli:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]

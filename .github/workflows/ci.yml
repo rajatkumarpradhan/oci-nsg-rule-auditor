@@ -1,0 +1,25 @@
+name: CI
+on:
+  push:
+  pull_request:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: ['3.10', '3.11', '3.12']
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+      - name: Install package
+        run: python -m pip install -e .
+      - name: Tests
+        run: python -m unittest discover -s tests -v
+      - name: CLI smoke (healthy inventory has no findings)
+        run: nsg-audit examples/good.json --fail-on low
+      - name: CLI smoke (risky inventory is flagged)
+        run: nsg-audit examples/risky.json --output report.json --fail-on high || test $? -eq 2
+      - name: CLI smoke (SARIF output)
+        run: nsg-audit examples/risky.json --output report.sarif --format sarif
