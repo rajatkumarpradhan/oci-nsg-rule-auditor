@@ -85,6 +85,45 @@ def _describe(r: Rule) -> str:
     return f"{r.protocol.upper()} {ports}"
 
 
+
+def _effective_groups(inv: Inventory, vname: str, out: list[Finding]) -> list[Group]:
+    """Groups that govern one VNIC together: its subnet's security lists plus its NSGs."""
+    by = {(g.kind, g.name): g for g in inv.groups}
+    groups: list[Group] = []
+    sname = inv.vnic_subnets.get(vname)
+    if sname is not None:
+        if sname not in inv.subnets:
+            out.append(Finding("NS014", "medium", f"vnic:{vname}",
+                               f"VNIC refers to subnet {sname!r}, which is not in the inventory.", {"subnet": sname}))
+        else:
+            groups.extend(by[("security_list", n)] for n in inv.subnets[sname] if ("security_list", n) in by)
+    groups.extend(by[("nsg", n)] for n in inv.vnics[vname] if ("nsg", n) in by)
+    return groups
+
+
+def _cross_group(inv: Inventory, out: list[Finding]) -> None:
+    """Duplicates and shadowing that only appear once a VNIC's groups are combined."""
+    for vname in inv.vnics:
+        groups = _effective_groups(inv, vname, out)
+        for i, g1 in enumerate(groups):
+            for g2 in groups[i + 1:]:
+                for r in g1.rules:
+                    for o in g2.rules:
+                        if r.direction != o.direction:
+                            continue
+                        if _key(r) == _key(o):
+                            out.append(Finding("NS015", "low", f"vnic:{vname} {g1.label}/{r.direction}[{r.index}]",
+                                               f"Same rule also appears in {g2.label} ({o.direction}[{o.index}]). {vname} is governed by both groups, so one copy is redundant.",
+                                               {"also_in": g2.label, "also_index": o.index}))
+                        elif _covers(o, r):
+                            out.append(Finding("NS016", "low", f"vnic:{vname} {g1.label}/{r.direction}[{r.index}]",
+                                               f"Already allowed on {vname} by the broader {g2.label}/{o.direction}[{o.index}] ({o.peer_text}, {_describe(o)}); this rule adds nothing.",
+                                               {"covered_by": f"{g2.label}/{o.direction}[{o.index}]"}))
+                        elif _covers(r, o):
+                            out.append(Finding("NS016", "low", f"vnic:{vname} {g2.label}/{o.direction}[{o.index}]",
+                                               f"Already allowed on {vname} by the broader {g1.label}/{r.direction}[{r.index}] ({r.peer_text}, {_describe(r)}); this rule adds nothing.",
+                                               {"covered_by": f"{g1.label}/{r.direction}[{r.index}]"}))
+
 def analyze(inv: Inventory) -> list[Finding]:
     out: list[Finding] = []
     nsgs = {g.name for g in inv.groups if g.kind == "nsg"}
@@ -137,6 +176,7 @@ def analyze(inv: Inventory) -> list[Finding]:
         for n in names:
             if n not in nsgs:
                 out.append(Finding("NS014", "medium", f"vnic:{vname}", f"VNIC refers to NSG {n!r}, which is not in the inventory.", {"nsg": n}))
+    _cross_group(inv, out)
     out.sort(key=lambda f: (SEV[f.severity], f.rule, f.subject, f.message))
     return out
 
