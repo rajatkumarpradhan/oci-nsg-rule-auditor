@@ -22,6 +22,8 @@ RULES = {
     "NS012": "Rule is already covered by a broader rule",
     "NS013": "Egress allows everything to anywhere",
     "NS014": "Subnet or VNIC refers to a group that is not in the inventory",
+    "NS015": "Same rule appears in two groups that govern the same VNIC",
+    "NS016": "Rule is covered by a broader rule in another group on the same VNIC",
 }
 
 

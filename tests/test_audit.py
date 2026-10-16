@@ -45,7 +45,7 @@ class ExampleTests(unittest.TestCase):
         self.assertEqual(run(copy.deepcopy(GOOD)), [])
 
     def test_risky_example_triggers_every_rule(self):
-        self.assertEqual(rules(ex("risky.json")), {f"NS{n:03d}" for n in range(1, 15)})
+        self.assertEqual(rules(ex("risky.json")), {f"NS{n:03d}" for n in range(1, 17)})
 
     def test_order_is_by_severity(self):
         sev = [analysis.SEV[f.severity] for f in run(ex("risky.json"))]

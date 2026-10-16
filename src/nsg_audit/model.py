@@ -59,6 +59,7 @@ class Inventory:
     groups: list[Group] = field(default_factory=list)
     subnets: dict[str, list[str]] = field(default_factory=dict)   # subnet -> security list names
     vnics: dict[str, list[str]] = field(default_factory=dict)     # vnic -> nsg names
+    vnic_subnets: dict[str, str] = field(default_factory=dict)    # vnic -> subnet name (optional in the export)
     public_subnets: set[str] = field(default_factory=set)
 
 
@@ -152,6 +153,8 @@ def load(data: dict) -> Inventory:
             if name in inv.vnics:
                 raise ModelError(f"duplicate vnic {name!r}")
             inv.vnics[name] = _names(v.get("nsgs", []), f"vnics[{i}].nsgs")
+            if "subnet" in v and v["subnet"] is not None:
+                inv.vnic_subnets[name] = _str(v["subnet"], f"vnics[{i}].subnet")
     except (KeyError, TypeError, AttributeError) as e:
         raise ModelError(f"invalid model: {e!r}") from e
     return inv
