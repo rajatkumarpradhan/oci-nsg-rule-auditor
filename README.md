@@ -1,6 +1,6 @@
 # oci-nsg-rule-auditor
 
-Offline audit of OCI security lists and network security groups (NSGs). It reads a JSON inventory, applies 14 rules and prints findings ordered by severity. It can also write JSON or SARIF 2.1.0.
+Offline audit of OCI security lists and network security groups (NSGs). It reads a JSON inventory, applies 16 rules and prints findings ordered by severity. It can also write JSON or SARIF 2.1.0.
 
 This is a portfolio project. The inventory format is a simplified schema I made up for this tool. It is not the OCI API or Terraform shape. The data in `examples/` is synthetic. Nothing here has been run against a real tenancy, and the tool calls no OCI API. The rule list is my own checklist, not an official OCI or CIS benchmark.
 
@@ -31,12 +31,18 @@ Exit codes: 0 ok, 1 bad input, 2 a finding at or above `--fail-on`.
 | NS011 | low | all ICMP from anywhere |
 | NS012 | low | rule already covered by a broader rule in the same list |
 | NS013 | low | egress all protocols to anywhere |
-| NS014 | medium | subnet or VNIC refers to a security list or NSG that does not exist |
+| NS014 | medium | subnet or VNIC refers to a security list, NSG or subnet that does not exist |
+| NS015 | low | the same rule appears in two groups that govern the same VNIC |
+| NS016 | low | a rule is covered by a broader rule in another group on the same VNIC |
+
+## Effective rules per VNIC
+
+A VNIC is governed by its subnet's security lists and its own NSGs together. Give a VNIC a `"subnet"` name in the inventory and the tool checks the combined set: NS015 and NS016 report duplicates and shadowing that only show up across the groups (per-group duplicates and shadowing are NS009 and NS012). IPv6 and NSG-to-NSG peer rules are handled the same way as IPv4 in the combined set.
 
 ## Limits
 
-- Rules are checked per list. It does not compute the effective rule set for a VNIC by combining security lists and NSGs.
-- The stateless check (NS006) only looks for any matching-direction stateless rule in the same list, not exact return ports.
+- The stateless check (NS006) only looks for any matching-direction stateless rule in the same list, not exact return ports, and the combined-set checks do not change it.
+- Combined-set checks (NS015, NS016) cover duplicates and shadowing across a VNIC's groups; they do not model routing tables or gateways.
 - Shadowing (NS012) compares protocol, ports, source and statefulness only.
 - Ports are a single number or a `[low, high]` range per rule.
 
@@ -46,4 +52,4 @@ Exit codes: 0 ok, 1 bad input, 2 a finding at or above `--fail-on`.
 python -m unittest discover -s tests -v
 ```
 
-The tests cover the boundaries (100 vs 101 ports, /16 vs /15), IPv6, shadowing, duplicates, validation errors, CLI exit codes and SARIF output. `examples/good.json` must produce zero findings and `examples/risky.json` must trigger all 14 rules.
+The tests cover the boundaries (100 vs 101 ports, /16 vs /15), IPv6, shadowing, duplicates, validation errors, CLI exit codes and SARIF output. `examples/good.json` must produce zero findings and `examples/risky.json` must trigger all 16 rules.
