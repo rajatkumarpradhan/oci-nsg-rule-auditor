@@ -127,6 +127,25 @@
     }
    ],
    "egress": []
+  },
+  {
+   "name": "app-nsg",
+   "ingress": [
+    {
+     "protocol": "tcp",
+     "source": "0.0.0.0/0",
+     "ports": 22
+    },
+    {
+     "protocol": "tcp",
+     "source": "10.0.0.0/24",
+     "ports": [
+      1000,
+      1050
+     ]
+    }
+   ],
+   "egress": []
   }
  ],
  "subnets": [
@@ -143,8 +162,10 @@
  "vnics": [
   {
    "name": "vm-1",
+   "subnet": "pub",
    "nsgs": [
-    "ghost-vnic-nsg"
+    "ghost-vnic-nsg",
+    "app-nsg"
    ]
   }
  ]
