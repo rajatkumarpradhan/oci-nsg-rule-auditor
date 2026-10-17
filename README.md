@@ -14,6 +14,21 @@ nsg-audit examples/risky.json --output report.sarif --format sarif --fail-on hig
 
 Exit codes: 0 ok, 1 bad input, 2 a finding at or above `--fail-on`.
 
+## Reachability query
+
+```
+nsg-audit reach examples/good.json --source lb-1 --target app-vm-1 --port 8080
+nsg-audit reach examples/good.json --source 10.0.1.0/24 --target app-vm-1 --protocol tcp --port 443
+```
+
+Answers "can source A reach target VNIC B on protocol/port P?" from the inventory. The source is a CIDR or a VNIC name; the target is a VNIC. The tool checks the source's effective egress (for a VNIC source) and the target's effective ingress (its subnet's security lists plus its NSGs), prints the rule(s) that allow the traffic or why nothing does, and exits 0 when reachable, 3 when not, 1 on bad input. The exit code makes it usable as a CI assertion.
+
+Simplifications, on top of the audit ones below:
+
+- VNICs have no IP addresses in the inventory, so a CIDR rule can only be evaluated against a CIDR source, and an egress rule "to anywhere" (prefix length 0) is assumed to cover a VNIC target.
+- Stateful rules track replies. A stateless allow counts only when the target's effective set also has a stateless egress rule covering the source (the return check matches protocol and peer, not ports).
+- No routing tables, gateways or live tenancy data.
+
 ## Rules
 
 | Rule | Severity | What it flags |
@@ -52,4 +67,4 @@ A VNIC is governed by its subnet's security lists and its own NSGs together. Giv
 python -m unittest discover -s tests -v
 ```
 
-The tests cover the boundaries (100 vs 101 ports, /16 vs /15), IPv6, shadowing, duplicates, validation errors, CLI exit codes and SARIF output. `examples/good.json` must produce zero findings and `examples/risky.json` must trigger all 16 rules.
+The tests cover the boundaries (100 vs 101 ports, /16 vs /15), IPv6, shadowing, duplicates, validation errors, CLI exit codes and SARIF output. `examples/good.json` must produce zero findings and `examples/risky.json` must trigger all 16 rules. The reach tests cover allow, deny, NSG peer rules, stateless return paths, port boundaries and the CLI exit codes.
